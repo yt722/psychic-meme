@@ -1,0 +1,27 @@
+{
+  "name": "training-lab-board",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "实训室工位看板 —— 多实训室 / 多工位的实时状态看板与席位资源管理",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "workspaces": [
+    "packages/*",
+    "services/*"
+  ],
+  "scripts": {
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "verify": "npm run typecheck && npm run test",
+    "serve:board": "node --import tsx services/board-web/public/serve.ts",
+    "serve:upstreams": "node --import tsx services/board-web/public/serve-upstreams.ts",
+    "selfcheck": "node --import tsx services/board-web/public/selfcheck.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4"
+  }
+}

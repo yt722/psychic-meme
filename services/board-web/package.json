@@ -1,0 +1,27 @@
+{
+  "name": "@peripheral/board-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "S01 实训室与工位看板：三级浏览、四状态、工位详情、实时刷新、断线恢复、筛选统计历史、HTTP 只读端点",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./production": {
+      "types": "./src/production.ts",
+      "default": "./src/production.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.test.json",
+    "test": "node --import tsx --test test/browse.test.ts test/states.test.ts test/detail.test.ts test/detail-context.test.ts test/refresh.test.ts test/reconnect.test.ts test/filter-stats.test.ts test/http.test.ts test/event-stream.test.ts"
+  },
+  "dependencies": {
+    "@peripheral/core": "*"
+  }
+}

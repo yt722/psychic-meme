@@ -1,0 +1,498 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>真机总览 · 工位1 ~ 工位4（S05→S01 单进程链路）</title>
+<style>
+  * { box-sizing: border-box; }
+
+  /* ====================================================================
+   * 设计令牌 —— 与正式看板 (index.html) 同一套「高校科技蓝」视觉体系
+   * 改主题只改这里；两个页面必须保持一致。
+   */
+  :root {
+    --bg-0:#060d1f; --bg-1:#0a1528; --bg-2:#102039; --bg-3:#16294a;
+    --line:#1e3a5f; --line-soft:#16294a;
+    --txt:#dbeafe; --txt-dim:#8ba3c7; --txt-mute:#5b7296;
+    --brand:#38bdf8; --brand-2:#2563eb; --brand-glow:rgba(56,189,248,.35);
+    --ok:#34d399; --ok-bg:rgba(52,211,153,.12);
+    --warn:#fbbf24; --warn-bg:rgba(251,191,36,.12);
+    --bad:#f87171; --bad-bg:rgba(248,113,113,.12);
+    --radius:12px;
+  }
+
+  body {
+    margin: 0; padding: 22px 26px 60px;
+    font: 14px/1.65 "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+    color: var(--txt);
+    background:
+      radial-gradient(1100px 620px at 15% -10%, rgba(37,99,235,.22), transparent 60%),
+      radial-gradient(900px 520px at 88% 0%, rgba(14,165,233,.16), transparent 55%),
+      linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+  body::before {
+    content:''; position:fixed; top:0; left:0; right:0; height:2px; z-index:100;
+    background:linear-gradient(90deg, transparent, var(--brand) 35%, #818cf8 65%, transparent);
+    opacity:.85;
+  }
+  h1 {
+    font-size: 20px; margin: 0 0 4px; font-weight:700;
+    background: linear-gradient(92deg, #e0f2fe 0%, var(--brand) 55%, #a5b4fc 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    text-shadow: 0 0 26px rgba(56,189,248,.18);
+  }
+  h2 { font-size: 15px; margin: 18px 0 8px; color: #bfdbfe; display:flex; align-items:center; gap:8px; }
+  h2::before { content:''; width:4px; height:14px; border-radius:2px;
+    background:linear-gradient(180deg, var(--brand), #6366f1); box-shadow:0 0 10px var(--brand-glow); }
+  h3 { font-size: 14px; margin: 16px 0 6px; color: var(--txt); }
+  .sub { color: var(--txt-dim); font-size: 12.5px; }
+  .bar {
+    display: flex; gap: 14px; flex-wrap: wrap; align-items: center;
+    margin: 14px 0 18px; padding: 12px 15px;
+    background: linear-gradient(180deg, rgba(22,41,74,.72), rgba(16,32,57,.72));
+    border: 1px solid var(--line); border-radius: var(--radius); font-size: 12.5px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 6px 22px rgba(2,8,23,.45), inset 0 1px 0 rgba(148,197,255,.07);
+  }
+  .tag { padding: 3px 11px; border-radius: 999px; font-weight: 700; font-size: 12px; }
+  .t-real { background: var(--ok-bg); color: var(--ok); }
+  .t-warn { background: var(--warn-bg); color: var(--warn); }
+  .t-bad  { background: var(--bad-bg); color: var(--bad); }
+  .t-off  { background: rgba(148,163,184,.14); color: #cbd5e1; }
+
+  .warnbox {
+    margin: 0 0 18px; padding: 12px 15px; border-radius: var(--radius);
+    background: var(--warn-bg); border: 1px solid rgba(251,191,36,.4);
+    border-left: 4px solid var(--warn); color: #fde68a; font-size: 13px;
+  }
+  .warnbox code { color: #fef3c7; }
+
+  /* 工位分块：每个工位一张大卡，工位之间有明显边界 */
+  .station {
+    border: 1px solid var(--line); border-radius: var(--radius);
+    background: linear-gradient(180deg, rgba(22,41,74,.6), rgba(10,21,40,.6));
+    padding: 15px 17px 18px; margin: 0 0 20px;
+    box-shadow: 0 5px 22px rgba(2,8,23,.4), inset 0 1px 0 rgba(148,197,255,.06);
+  }
+  .station.never { border-color: rgba(248,113,113,.5); }
+  .st-head { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+  .st-head .name { font-size: 16px; font-weight: 700; color:#e0f2fe; }
+  .st-head .code { font-family: Consolas, monospace; font-size: 12px; color: var(--txt-mute); }
+  .st-meta { font-size: 12px; color: var(--txt-dim); margin: 2px 0 10px; word-break: break-all; }
+
+  .s-available { border-left: 5px solid var(--ok); } .d-available { background: var(--ok); }
+  .s-occupied  { border-left: 5px solid var(--warn); } .d-occupied  { background: var(--warn); }
+  .s-maintenance { border-left: 5px solid #a78bfa; } .d-maintenance { background: #a78bfa; }
+  .s-offline   { border-left: 5px solid #475569; } .d-offline   { background: #475569; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; display: inline-block; box-shadow:0 0 8px currentColor; }
+
+  .utable { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .utable th { text-align: left; color: var(--txt-dim); font-weight: 500; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+  .utable td { padding: 8px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  .utable tr.never td { background: var(--warn-bg); }
+  .utable .meta { font-size: 11.5px; color: var(--txt-dim); margin-top: 4px; word-break: break-all; }
+
+  .cards { display: flex; flex-wrap: wrap; gap: 10px; }
+  .card {
+    background: linear-gradient(180deg, rgba(16,32,57,.9), rgba(8,17,34,.9));
+    border: 1px solid var(--line); border-radius: 10px; padding: 11px 13px;
+    min-width: 260px; flex: 1 1 260px;
+  }
+  .card .mac { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; color: #7dd3fc; }
+  .card .kv { display: flex; gap: 6px; font-size: 12.5px; margin-top: 4px; }
+  .card .kv b { color: var(--txt-dim); font-weight: 500; min-width: 64px; }
+
+  .alarm {
+    border-left: 4px solid #475569; background: rgba(10,21,40,.7);
+    border: 1px solid var(--line); border-radius: 9px;
+    padding: 10px 13px; margin-bottom: 8px;
+  }
+  .alarm.lv-warning { border-left-color: var(--warn); }
+  .alarm.lv-fault { border-left-color: var(--bad); }
+  .alarm.lv-info { border-left-color: var(--brand); }
+  .alarm .head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .alarm .code { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; color: #e0f2fe; }
+  .alarm .msg { font-size: 12.5px; color: var(--txt); margin-top: 5px; }
+  .alarm .ev { font-family: ui-monospace, Consolas, monospace; font-size: 11.5px; color: var(--txt-dim); margin-top: 5px; word-break: break-all; }
+  .alarm .inh { color: var(--warn); font-size: 12px; }
+
+  pre { background: rgba(4,10,22,.8); border: 1px solid var(--line); border-radius: 9px; padding: 10px; font-size: 11.5px; overflow-x: auto; }
+  .sep { color: var(--txt-mute); }
+  code { color: #7dd3fc; }
+</style>
+</head>
+<body>
+
+<h1>实训室总览 · <span id="campusname">海宁校区</span>：<span id="lab01title">智能制造系统集成实训室（工位1 ~ 工位4）</span> + <span id="lab05title">工业机器人应用技术实训室 ABB（12 工位）</span></h1>
+<div class="sub" id="src">连接中…</div>
+<div class="sub" id="crumb" style="margin:6px 0 2px;font-size:14px">三级浏览：加载中…</div>
+<div class="sub" id="campustree" style="margin:2px 0 2px;font-size:14px">校区：加载中…</div>
+
+<div class="bar">
+  <span>数据来源类型 <span class="tag t-real">real</span></span>
+  <span>来源标识 <code id="sid">—</code></span>
+  <span>采集器 <code>SRC-NETDEV-LAB01</code> · 二层观测（ARP/DCP/LLDP + 被动监听）· 每工位各自独立采集器</span>
+  <span style="margin-left:auto">SSE <span id="sse">等待连接…</span></span>
+</div>
+
+<div class="warnbox">
+  ⚠ <b>本机只有一块以太网口</b>：工位1、工位3、工位4 同在 <code>192.168.0.0/24</code>，工位2 在 <code>192.168.1.0/24</code>。
+  一次只有<b>一个工位</b>的网线是接上的，其余工位这一轮只会"什么都没看到"，因此显示「未上报 = offline」，
+  <b>绝不显示成"空闲"</b>；接上的那个工位照常上报。<br>
+  <span style="color:var(--warn)">口径：工位1/3/4 <b>同网段 ⇒ 归属只能靠 MAC</b>（同一个 IP 上可能是别工位的设备：
+  `.103` 在工位1/3/4 是三台不同设备、`.101` 在工位1/4 是两台、`.5` 在工位3/4 是两台）。
+  某工位采集时看到别工位的设备属正常现象，会进「待处理（unmapped）」如实列出，<b>不静默丢弃</b>；
+  真正的设备身份键只有接口 MAC。</span><br>
+  <span style="color:var(--warn)">口径：「扫不到」≠「不存在」。采集失败或网段未覆盖时，本页不推工位级 offline（由看板判离线窗口负责），
+  并如实回传每轮 <code>coverage</code> / <code>offlineSuppressed</code>。</span><br>
+  <span style="color:var(--warn)">口径：<b>两个实训室是两套独立载体</b>——LAB-01（<code>192.168.0/192.168.1</code>，4 工位，有采集器）
+  与 <b>LAB-05 工业机器人应用技术实训室（ABB）</b>（<code>192.168.101</code>，12 工位，<b>目录已建、采集器待接线后启用</b>）。
+  工位编码前缀不同（<code>ST-LAB01-</code> vs <code>ST-LAB05-</code>），网段<b>不通用</b>；
+  同号 IP 在两室之间不具备任何可继承含义，归属一律按「实训室 + MAC」共同定性。</span><br>
+  <span style="color:var(--warn)">口径：校区分为 <b>海宁校区</b> 与 <b>滨江校区</b>；
+  <b>上面这两个实训室都属于海宁校区</b>。滨江校区本期<b>无任何实训室接入</b>（如实登记为空节点，不编工位）。</span>
+</div>
+
+<h2 style="margin-top:24px">实训室 1 · 智能制造系统集成实训室（LAB-01）</h2>
+<div id="stations">加载中…</div>
+
+<h2 style="margin-top:26px">实训室 2 · 工业机器人应用技术实训室（ABB）· <code id="abbcode">LAB-05</code></h2>
+<div class="sub" id="abbreason">加载中…</div>
+<div id="abbstations">加载中…</div>
+
+<h2>跨工位报警（无单一工位归属，落 <code id="labwidecode">ST-LAB01-00</code>）</h2>
+<div id="labalarms" class="sub">加载中…</div>
+
+<p class="sub" style="margin-top:22px">原始响应（/site/data.json）</p>
+<pre id="raw">—</pre>
+
+<script>
+'use strict';
+const API = '/board/v1';
+/**
+ * 状态文案：**「未上报」与「离线」必须分开**（现场口径）。
+ *   state=offline 且 updatedAt=null → 未上报（从未有状态源数据，数据缺席）
+ *   state=offline 且 updatedAt 有值 → 离线（曾上报、之后判离线窗口判出）
+ * 页面不判定，只按"有没有 updatedAt"换词（判定在状态源侧与看板侧）。
+ */
+const STATE_CN = { available: '空闲', occupied: '占用', maintenance: '维护', offline: '离线' };
+const stateCn = (s, updatedAt) =>
+  (s === 'offline' && !updatedAt) ? '未上报' : (STATE_CN[s] || s);
+const LV_CN = { info: '提示', warning: '警告', fault: '故障' };
+const LV_TAG = { info: 't-real', warning: 't-warn', fault: 't-warn' };
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function stateTag(st, updatedAt) {
+  if (st === '归属未确认') return '<span class="tag t-warn">归属未确认</span>';
+  if (st === '未上报') return '<span class="tag t-off">未上报</span>';
+  if (STATE_CN[st]) {
+    const label = stateCn(st, updatedAt);
+    const cls = st === 'offline' ? 't-off' : 't-real';
+    return '<span class="tag ' + cls + '">' + label + '</span>' +
+      (st === 'offline' && !updatedAt ? '<span class="sub">（无数据）</span>' : '');
+  }
+  return '<span class="tag t-warn">' + esc(st) + '</span>';
+}
+
+function renderUnits(station) {
+  const rows = (station.units || []).map((u) => {
+    const never = u.state === '未上报' || u.state === '归属未确认';
+    const dot = u.state === '归属未确认' ? 'd-maintenance' : (u.state === '未上报' ? 'd-offline' : ('d-' + u.state));
+    return '<tr class="' + (never ? 'never' : '') + '">' +
+      '<td>' + esc(u.index) + '</td>' +
+      '<td><i class="dot ' + dot + '"></i> <b>' + esc(u.name) + '</b>' +
+        '<div class="meta">主要器件：' + esc(u.component) + '</div></td>' +
+      '<td><code>' + esc(u.code || '未观测') + '</code>' +
+        '<div class="meta">现场站名代号，拼音首字母推断，未经厂商确认</div></td>' +
+      '<td class="code">' + esc(u.powerPlc) + '</td>' +
+      '<td class="code">' + esc(u.device || (u.attributed ? '（本轮未观测到）' : '（归属未确认，不套设备）')) + '</td>' +
+      '<td>' + stateTag(u.state, u.observedAt) +
+        '<div class="meta">' + esc(String(u.observedAt || '无数据')) + '</div>' +
+        '<div class="meta">' + esc(u.evidence || '') + '</div></td>' +
+      '</tr>';
+  }).join('');
+  return '<table class="utable"><thead><tr><th>#</th><th>功能单元（主要器件）</th><th>站名代号</th><th>对应 PLC</th>' +
+    '<th>已观测设备 MAC / IP</th><th>状态 · 归属依据</th></tr></thead><tbody>' +
+    (rows || '<tr><td colspan="6">无单元数据</td></tr>') + '</tbody></table>';
+}
+
+/**
+ * ★★ 台账**登记了但本轮采集不到**的设备 —— 必须显示并标「无法采集」。
+ *
+ * 为什么要单独渲染（2026-09-23 现场要求）：
+ * 本室的 ABB 机器人 / 研华工控机 / 树莓派等**没有 IP、不对 DCP 应答**，
+ * 二层 `scan`（ARP+DCP+LLDP+端口）**采不到它们**。若不显式列出，
+ * 这些台账里登记过的设备会**从页面凭空消失**，让人误判"这个工位只有 PLC"。
+ *
+ * ⚠️ 口径（与"未上报 ≠ 离线"同源）：这里写的是「**本轮采集不到**」，
+ * **不是**「设备不存在」，也**不是**「设备离线」。
+ * 可能原因：①无 IP/不应答 DCP（本室常态）②未上电 ③未接网。
+ * 页面**不下结论**，只如实标注 + 给出待核原因。
+ */
+function renderUnobservedDevices(station) {
+  const list = station.unobservedDevices || [];
+  if (list.length === 0) return '';
+  return '<h3>台账已登记但<b>本轮采集不到</b>的设备（' + list.length + ' 台）' +
+    ' <span class="tag t-warn">无法采集</span></h3>' +
+    '<div class="sub">★ 口径：这三个字说的是「<b>本轮采集不到</b>」，' +
+    '<b>不是</b>「设备不存在」，也<b>不是</b>「设备离线」——' +
+    '本室这类设备通常<b>没有 IP、且不对 DCP 应答</b>，二层 <code>scan</code>（ARP+DCP+LLDP+端口）' +
+    '本就扫不到它们，只能靠被动监听发现。<b>请在停机窗口现场核对</b>它究竟是' +
+    '「未上电 / 未接网 / 接口未配 IP」中的哪一种，页面此处不下结论。</div>' +
+    '<table class="utable"><thead><tr><th>MAC</th><th>台账登记的身份</th><th>状态</th></tr></thead><tbody>' +
+    list.map((d) =>
+      '<tr><td class="code">' + esc(d.mac) + '</td>' +
+      '<td>' + esc(d.label || '（台账未写 label）') + '</td>' +
+      '<td><span class="tag t-warn">无法采集</span>' +
+        '<div class="meta">本轮未出现在扫描结果中</div></td></tr>').join('') +
+    '</tbody></table>';
+}
+
+function renderDevices(station) {
+  const devices = station.devices || [];
+  const unobserved = renderUnobservedDevices(station);
+  if (devices.length === 0) {
+    return '<div class="sub">本轮没有设备被观测到（未接网线 / 设备未上电 / 采集失败均可能；「扫不到」≠「不存在」）。' +
+      '<br>★ 该工位若显示「未上报」，是因为本机只有一块网口、当前接的不是它 —— <b>不是"空闲"</b>。</div>' +
+      unobserved;
+  }
+  return '<div class="cards">' + devices.map((d) => {
+    const p = d.params || {};
+    const kv = (label, value) => '<div class="kv"><b>' + label + '</b><span>' + esc(value == null || value === '' ? '—' : value) + '</span></div>';
+    return '<div class="card">' +
+      '<div class="mac">' + esc(d.mac) + '</div>' +
+      '<div class="tag ' + (d.status === 'offline' ? 't-off' : 't-real') + '" style="margin-top:6px">' +
+        esc(STATE_CN[d.status] || d.status) + '</div>' +
+      kv('IP', d.ip) +
+      kv('站名', d.stationName === 'unknown' ? '（未自报）' : d.stationName) +
+      kv('来源', p.sources) +
+      kv('开放端口', p.openPorts || '（无）') +
+      kv('厂商标识', p.vendorId) +
+      kv('设备标识', p.deviceId) +
+      kv('设备告警', p.alarm === 'none' || !p.alarm ? '（无）' : p.alarm) +
+      kv('观测时间', String(d.observedAt || '').replace('T', ' ').slice(0, 19)) +
+      '</div>';
+  }).join('') + '</div>' + unobserved;
+}
+
+function renderAlarms(alarms) {
+  if (!alarms || alarms.length === 0) return '<div class="sub">本次运行还没有判出报警</div>';
+  return alarms.map((a) => {
+    const ev = Object.entries(a.evidence || {})
+      .map(([k, v]) => k + '=' + (typeof v === 'object' ? JSON.stringify(v) : String(v)))
+      .join('  ');
+    return '<div class="alarm lv-' + esc(a.level) + '">' +
+      '<div class="head">' +
+        '<span class="tag ' + (LV_TAG[a.level] || 't-warn') + '">' + esc(LV_CN[a.level] || a.level) + '</span>' +
+        '<span class="code">' + esc(a.code) + '</span>' +
+        '<span class="sub">' + esc(a.stationCode) + ' ← 由 ' + esc(a.originStationCode || '—') + ' 采集器判出</span>' +
+        (a.inhibitedBy ? '<span class="inh">已被抑制：' + esc(a.inhibitedBy) + '</span>' : '') +
+        '<span class="sub" style="margin-left:auto">首见 ' + esc(String(a.firstSeenAt).replace('T', ' ').slice(0, 19)) +
+        ' · 最近 ' + esc(String(a.lastSeenAt).replace('T', ' ').slice(0, 19)) + ' · 计次 ' + esc(a.seenTimes) + '</span>' +
+      '</div>' +
+      '<div class="msg">' + esc(a.detail) + '</div>' +
+      '<div class="ev">' + esc(ev) + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+function renderStation(station) {
+  // 「未上报（无数据）」与「离线（曾上报、判离线窗口判出）」分开显示：
+  // 判据只有一条——state=offline 时看有没有 updatedAt（页面不判定，只换词）
+  const noData = station.state === 'offline' && !station.updatedAt;
+  const never = station.state === 'offline';
+  const coverage = station.coverage ? JSON.stringify(station.coverage) : '（本轮无采集结果）';
+  const head =
+    '<div class="st-head">' +
+      '<span class="dot d-' + esc(station.state) + '"></span>' +
+      '<span class="name">' + esc(station.name) + '</span>' +
+      '<span class="code">' + esc(station.stationCode) + '</span>' +
+      stateTag(station.state, station.updatedAt) +
+      (noData ? '<span class="tag t-off">未上报 = 无数据（不是"空闲"）</span>'
+              : (never ? '<span class="tag t-off">离线 = 不可用</span>' : '')) +
+    '</div>' +
+    '<div class="st-meta">网段 <code>' + esc(station.subnet) + '.0/24</code> · ' +
+      '最近观测 ' + esc(String(station.lastObservedAt || '（无）').replace('T', ' ').slice(0, 23)) + ' · ' +
+      '已完成采集轮数 ' + esc(station.passes) + ' · ' +
+      '更新时刻 ' + esc(String(station.updatedAt || '（从未上报：updatedAt=null）').replace('T', ' ').slice(0, 23)) + '<br>' +
+      esc(String(station.params && station.params.unitAttribution || '')) + ' · ' +
+      esc(String(station.params && station.params.deviceSummary || '')) + '<br>' +
+      '已观测设备：' + esc(String(station.params && station.params.observedDevices || '（无）')) + '<br>' +
+      '聚合规则：' + esc(String(station.params && station.params.aggregation || '—')) + '<br>' +
+      '本轮 coverage ' + esc(coverage) + ' · offlineSuppressed ' + esc(station.offlineSuppressed) +
+      (noData ? '<br><span style="color:var(--warn)">★ 本工位本轮未匹配到任何设备：状态源**不推**状态（"扫不到"≠"不存在"），' +
+        '故显示"未上报（无数据）"而非"空闲"。</span>' : '') +
+    '</div>';
+  return '<div class="station s-' + esc(station.state) + (never ? ' never' : '') + '">' +
+    head +
+    '<h3>7 个功能单元（每个工位都是这 7 个；只有归属有证据的单元才套设备状态）</h3>' +
+    renderUnits(station) +
+    '<h3>采集到的设备参数</h3>' +
+    renderDevices(station) +
+    '<h3>报警（真实二层观测判定，含被抑制的）</h3>' +
+    renderAlarms(station.alarms) +
+    '</div>';
+}
+
+/**
+ * 第二个实训室（LAB-05 ABB）的**工位目录**渲染。
+ *
+ * ⚠️ 本室**一部分工位已接入采集、一部分没有**（见 `s.collector`）：
+ *   - `collector === true` → 该工位**在 `stations[]` 里已有完整卡片**（有 subnet/coverage/passes），
+ *     这里只留一条指向说明，**不重复渲染第二张卡片**（重复会让人以为是两个工位）；
+ *   - `collector === false` → 工位**没有采集器**，不能复用 `renderStation`（那里会读采集器字段）。
+ *
+ * ★ 两种情况都**不得**写成"离线/空闲"：未接入是"没在采"，与"采了没采到""设备空闲"是三件事。
+ */
+function renderPendingStation(s) {
+  const wired = s.collector === true;
+  return '<div class="station ' + (wired ? '' : 'never') + '" style="opacity:.92">' +
+    '<div class="st-head">' +
+      '<span class="dot d-offline"></span>' +
+      '<span class="name">' + esc(s.name) + '</span>' +
+      '<span class="code">' + esc(s.stationCode) + '</span>' +
+      '<span class="tag ' + (wired ? 't-real' : 't-off') + '">' + (wired ? '已接入采集' : '未接入') + '</span>' +
+    '</div>' +
+    (wired
+      ? '<div class="st-meta"><b>已接入采集</b>：本工位已有 MAC 台账与采集器，' +
+        '真实状态见上方 <b>' + esc(s.stationCode) + '</b> 的工位卡片（本目录条目不重复展示）。</div>'
+      : '<div class="st-meta"><b>未接入采集</b>：本工位尚未逐台接线、也没有 MAC 台账，' +
+        '因此<b>没有采集器在跑</b>——既不是"离线"（没有过上报），更不是"空闲"。' +
+        '接线并补台账后即可与 LAB-01 工位同构启用。</div>') +
+  '</div>';
+}
+
+/**
+ * 采集接入情况的一句话说明。
+ *
+ * ★ 必须区分"工位总数"与"已接入采集的工位数"：LAB-05 有 12 个工位但当前只接入了一部分，
+ * 只报总数会让人读成"12 个都在采、只是没采到设备"——那是完全不同的结论。
+ */
+function collectorNote(lab) {
+  const total = typeof lab.stationCount === 'number' ? lab.stationCount : 0;
+  const wired = typeof lab.collectorStations === 'number'
+    ? lab.collectorStations
+    : (lab.collector ? total : 0);
+  if (wired === 0) return ' · 未接入采集';
+  if (wired < total) return ' · 已接入 ' + wired + '/' + total + ' 工位采集';
+  return '';
+}
+
+function renderPendingLab(pending) {
+  if (!pending || !pending.labCode) {
+    $('abbreason').textContent = '（无第二个实训室数据）';
+    $('abbstations').innerHTML = '';
+    return;
+  }
+  $('abbcode').textContent = pending.labCode;
+  const pendingStations = pending.stations || [];
+  const wiredStations = pendingStations.filter((s) => s.collector === true);
+  $('abbreason').innerHTML = '来源标识 <code>' + esc(pending.sourceId || '—') + '</code>' +
+    ' · 网段 <code>' + esc(pending.subnet || '—') + '.0/24</code>' +
+    ' · 共 <b>' + pendingStations.length + '</b> 个工位，其中 <b>' + wiredStations.length + '</b> 个已接入采集' +
+    (wiredStations.length > 0
+      ? '（' + wiredStations.map((s) => esc(s.stationCode)).join(', ') + '）'
+      : '') +
+    '<br>' + esc(pending.reason || '');
+  $('abbstations').innerHTML = pendingStations.map(renderPendingStation).join('');
+}
+
+/**
+ * 三级浏览：校区 → 实训室 → 工位（数量）。
+ *
+ * ⚠️ 滨江校区本期**没有任何实训室**——渲染成"（本期无实训室接入）"，
+ * **不是隐藏、也不是"暂无数据"**：它是真实登记的空节点，隐藏会让人以为校区不存在。
+ */
+function renderCampusTree(campuses, activeCampusCode) {
+  if (!campuses || campuses.length === 0) { $('campustree').textContent = ''; return; }
+  $('campustree').innerHTML = '校区：' + campuses.map((c) => {
+    const isActive = c.campusCode === activeCampusCode;
+    const labs = (c.labs || []);
+    const labText = labs.length === 0
+      ? '<span class="sub">（本期无实训室接入）</span>'
+      : labs.map((l) =>
+          '<b>' + esc(l.labCode) + '</b> ' + esc(l.labName) +
+          ' <span class="sub">(' + l.stationCount + ' 工位' + collectorNote(l) + ')</span>').join(' · ');
+    return (isActive ? '<b>' : '<span style="opacity:.75">') + esc(c.campusName) + ' <span class="sub">' + esc(c.campusCode) + '</span>'
+      + (isActive ? '</b>' : '</span>') + ' → ' + labText;
+  }).join(' ｜ ');
+}
+
+function render(data) {
+  const campus = data.campus || {};
+  const lab = data.lab || {};
+  const stations = data.stations || [];
+  if (campus.campusName) $('campusname').textContent = campus.campusName;
+  renderCampusTree(data.campuses, campus.campusCode);
+  $('crumb').innerHTML =
+    '<span class="sub">' + esc(campus.campusName || '—') + ' <span class="sep">/</span> ' + esc(lab.labName || '—') + '</span>' +
+    stations.map((s) => ' <span class="sep">/</span> <b>' + esc(s.name) + '</b> <span class="sub">(' + esc(s.stationCode) + ')</span>').join('') +
+    '<span class="sep"> / </span><b>' + esc((data.pendingLab || {}).labName || '—') + '</b>' +
+    ' <span class="sub">(' + esc((data.pendingLab || {}).labCode || '—') + ' · ' +
+    ((data.pendingLab || {}).stations || []).length + ' 工位 · 已接入 ' +
+    ((data.pendingLab || {}).measuredStationCodes || []).length + ' 个采集)</span>';
+  $('sid').textContent = data.sourceId || '—';
+  $('stations').innerHTML = stations.map(renderStation).join('');
+  renderPendingLab(data.pendingLab);
+  $('labalarms').innerHTML = renderAlarms(data.labWideAlarms || []);
+  $('raw').textContent = JSON.stringify(data, null, 2);
+  const pending = data.pendingLab || {};
+  $('src').textContent = '服务器时间 ' + data.serverTime + ' · ' +
+    stations.map((s) => s.name + ' ' + esc(stateCn(s.state, s.updatedAt))).join(' · ') +
+    ' · ' + esc(pending.labName || '') + ' ' +
+    ((pending.stations || []).length) + ' 工位中 ' +
+    ((pending.measuredStationCodes || []).length) + ' 个已接入采集';
+}
+
+async function load() {
+  try {
+    const r = await fetch('/site/data.json', { cache: 'no-store' });
+    render(await r.json());
+  } catch (e) {
+    $('stations').textContent = '获取失败：' + e.message;
+  }
+}
+
+let stream = null;
+function connect() {
+  stream = new EventSource(API + '/events');
+  stream.addEventListener('hello', (ev) => {
+    const d = JSON.parse(ev.data);
+    $('sse').textContent = '已连接 · 帧 #' + d.sequence;
+    $('sse').className = 'tag t-real';
+  });
+  stream.addEventListener('snapshot', (ev) => {
+    const d = JSON.parse(ev.data);
+    $('sse').textContent = '全量快照 ' + d.count + ' 个工位（' + d.reason + '）';
+    $('sse').className = 'tag t-real';
+    load();
+  });
+  stream.addEventListener('state', (ev) => {
+    const d = JSON.parse(ev.data);
+    const kinds = [...new Set(d.changes.map((c) => c.sourceKind))].join(',');
+    $('sse').textContent = '帧 #' + d.sequence + ' · ' + d.count + ' 条变更 · ' +
+      (d.full ? '全量' : '增量') + ' · sourceKind=' + kinds + ' · ' + d.iso;
+    $('sse').className = 'tag t-real';
+    load();
+  });
+  stream.addEventListener('notice', (ev) => {
+    $('sse').textContent = '提示：' + JSON.parse(ev.data).reason;
+    $('sse').className = 'tag t-warn';
+  });
+  stream.onerror = () => {
+    $('sse').textContent = 'SSE 断开，浏览器自动重连（Last-Event-ID 续传）';
+    $('sse').className = 'tag t-bad';
+  };
+}
+
+load();
+connect();
+setInterval(load, 5000);
+</script>
+</body>
+</html>

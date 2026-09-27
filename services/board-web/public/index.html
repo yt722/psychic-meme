@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S01 实训室与工位看板</title>
+<style>
+  * { box-sizing: border-box; }
+
+  /* ====================================================================
+   * 设计令牌 —— 「高校科技蓝」视觉体系
+   * ====================================================================
+   * 深空蓝底 + 玻璃拟态面板 + 科技感发光描边 + 数据大屏式数字。
+   * 所有组件只引用这里的变量，改主题只改这一处。
+   */
+  :root {
+    --bg-0:#060d1f;          /* 最底层 */
+    --bg-1:#0a1528;          /* 页面底 */
+    --bg-2:#102039;          /* 面板 */
+    --bg-3:#16294a;          /* 面板高亮 */
+    --line:#1e3a5f;          /* 描边 */
+    --line-soft:#16294a;
+    --txt:#dbeafe;           /* 主文字 */
+    --txt-dim:#8ba3c7;       /* 次要文字 */
+    --txt-mute:#5b7296;      /* 占位/弱化文字 */
+    --brand:#38bdf8;         /* 科技蓝主色 */
+    --brand-2:#2563eb;       /* 深蓝 */
+    --brand-glow:rgba(56,189,248,.35);
+    --ok:#34d399; --ok-bg:rgba(52,211,153,.12);
+    --warn:#fbbf24; --warn-bg:rgba(251,191,36,.12);
+    --bad:#f87171; --bad-bg:rgba(248,113,113,.12);
+    --radius:12px;
+  }
+
+  body {
+    margin: 0; padding: 24px 28px 60px;
+    font: 14px/1.6 "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+    color: var(--txt);
+    background:
+      radial-gradient(1100px 620px at 15% -10%, rgba(37,99,235,.22), transparent 60%),
+      radial-gradient(900px 520px at 88% 0%, rgba(14,165,233,.16), transparent 55%),
+      linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+  /* 顶部一条科技蓝光带，做"大屏"气质 */
+  body::before {
+    content:''; position:fixed; top:0; left:0; right:0; height:2px; z-index:100;
+    background:linear-gradient(90deg, transparent, var(--brand) 35%, #818cf8 65%, transparent);
+    opacity:.85;
+  }
+
+  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
+  h1 {
+    font-size: 21px; margin: 0; letter-spacing: .6px; font-weight: 700;
+    background: linear-gradient(92deg, #e0f2fe 0%, var(--brand) 55%, #a5b4fc 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    text-shadow: 0 0 26px rgba(56,189,248,.18);
+  }
+  .sub { color: var(--txt-dim); font-size: 12px; }
+  .bar {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    margin: 16px 0 20px; padding: 12px 14px;
+    background: linear-gradient(180deg, rgba(22,41,74,.72), rgba(16,32,57,.72));
+    border: 1px solid var(--line); border-radius: var(--radius);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 6px 22px rgba(2,8,23,.45), inset 0 1px 0 rgba(148,197,255,.07);
+  }
+  select, input, button {
+    font: inherit; padding: 6px 10px; border-radius: 8px;
+    border: 1px solid var(--line); background: rgba(6,13,31,.75); color: var(--txt);
+  }
+  select:focus, input:focus { outline:none; border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-glow); }
+  button {
+    cursor: pointer; font-weight: 600; border-color: transparent;
+    background: linear-gradient(180deg, #38bdf8, #2563eb);
+    color:#04121f;
+    box-shadow: 0 2px 12px rgba(56,189,248,.28);
+    transition: filter .12s, transform .1s;
+  }
+  button:hover { filter: brightness(1.1); }
+  button:active { transform: translateY(1px); }
+  button.ghost {
+    background: rgba(56,189,248,.06); border: 1px solid var(--line);
+    color: var(--txt-dim); font-weight: 500; box-shadow:none;
+  }
+  button.ghost:hover { background: rgba(56,189,248,.14); color: var(--txt); border-color: var(--brand); }
+
+  .stats { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 22px; }
+  .stat {
+    min-width: 112px; padding: 11px 15px; border-radius: var(--radius);
+    background: linear-gradient(180deg, rgba(22,41,74,.85), rgba(12,24,45,.85));
+    border: 1px solid var(--line);
+    box-shadow: inset 0 1px 0 rgba(148,197,255,.08), 0 4px 16px rgba(2,8,23,.35);
+    position: relative; overflow: hidden;
+  }
+  .stat::after {
+    content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
+    background:linear-gradient(180deg, var(--brand), #6366f1);
+  }
+  .stat .n { font-size: 26px; font-weight: 700; line-height: 1.2; color:#e0f2fe; }
+  .stat .l { font-size: 12px; color: var(--txt-dim); }
+  .stat b { font-size: 26px; font-weight: 700; color: #e0f2fe; letter-spacing:.5px; }
+  .stat span { font-size: 12px; color: var(--txt-dim); }
+
+  .campus { margin-bottom: 26px; }
+  .campus > h2 {
+    font-size: 15px; margin: 0 0 10px; padding-bottom: 7px;
+    border-bottom: 1px solid var(--line); color: #bfdbfe;
+    display:flex; align-items:center; gap:8px;
+  }
+  .campus > h2::before {
+    content:''; width:4px; height:15px; border-radius:2px;
+    background:linear-gradient(180deg, var(--brand), #6366f1);
+    box-shadow:0 0 10px var(--brand-glow);
+  }
+  .lab {
+    margin: 0 0 14px 14px; padding: 14px 16px;
+    background: linear-gradient(180deg, rgba(22,41,74,.6), rgba(10,21,40,.6));
+    border: 1px solid var(--line); border-left: 3px solid var(--brand);
+    border-radius: var(--radius);
+    box-shadow: 0 4px 18px rgba(2,8,23,.35);
+  }
+  .lab > h3 { font-size: 13.5px; margin: 0 0 9px; color: #bfdbfe; font-weight: 600; }
+  .lab .code { color: var(--txt-mute); font-weight: 400; font-family: Consolas, monospace; font-size: 12px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: 10px; }
+
+  .st {
+    padding: 11px 13px; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--line); background: linear-gradient(180deg, rgba(16,32,57,.9), rgba(8,17,34,.9));
+    transition: transform .12s, border-color .12s, box-shadow .12s;
+    position: relative; overflow: hidden;
+  }
+  .st::after {
+    content:''; position:absolute; inset:0; pointer-events:none; opacity:0;
+    background:radial-gradient(220px 90px at 50% 0%, var(--brand-glow), transparent 70%);
+    transition:opacity .18s;
+  }
+  .st:hover { transform: translateY(-2px); border-color: var(--brand); box-shadow: 0 8px 24px rgba(2,8,23,.5); }
+  .st:hover::after { opacity:.55; }
+  .st .top { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; box-shadow:0 0 8px currentColor; }
+  .st .name { font-weight: 600; font-size: 13px; color:#e0f2fe; }
+  .st .sc { font-family: Consolas, monospace; font-size: 11px; color: var(--txt-mute); }
+  .st .meta { font-size: 11px; color: var(--txt-dim); margin-top: 4px; }
+  .st .alm { font-size: 11px; color: var(--bad); margin-top: 3px; }
+
+  .s-available   { border-left: 4px solid var(--ok); }
+  .s-occupied    { border-left: 4px solid var(--warn); }
+  .s-maintenance { border-left: 4px solid #a78bfa; }
+  .s-offline     { border-left: 4px solid #475569; }
+  .d-available   { background: var(--ok); color: var(--ok); }
+  .d-occupied    { background: var(--warn); color: var(--warn); }
+  .d-maintenance { background: #a78bfa; color: #a78bfa; }
+  .d-offline     { background: #475569; color: #475569; }
+
+  /* 工位详情抽屉 */
+  #mask {
+    position: fixed; inset: 0; background: rgba(2,6,23,.78);
+    backdrop-filter: blur(3px);
+    display: none; z-index: 40;
+  }
+  #mask.on { display: block; }
+  #drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; width: min(430px, 94vw);
+    background: linear-gradient(180deg, #12233f, #0a1528);
+    border-left: 1px solid var(--line);
+    box-shadow: -18px 0 48px rgba(2,8,23,.6);
+    padding: 22px 24px; overflow-y: auto; z-index: 50;
+    transform: translateX(100%); transition: transform .18s ease-out;
+  }
+  #drawer.on { transform: none; }
+  #drawer h2 { margin: 0 0 4px; font-size: 17px; color:#e0f2fe; }
+  #drawer .dsc { font-family: Consolas, monospace; color: var(--txt-dim); font-size: 12px; margin-bottom: 16px; }
+  #drawer table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  #drawer td { padding: 7px 0; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  #drawer td:first-child { color: var(--txt-dim); width: 118px; }
+  #drawer .close {
+    position: absolute; top: 14px; right: 16px; background: none; border: none;
+    color: var(--txt-dim); font-size: 22px; cursor: pointer; padding: 2px 8px; box-shadow:none;
+  }
+  #drawer .close:hover { color: #fff; background: none; }
+  .pill {
+    display: inline-block; padding: 2px 10px; border-radius: 999px;
+    font-size: 12px; font-weight: 600;
+  }
+  .p-available   { background: var(--ok-bg); color: var(--ok); }
+  .p-occupied    { background: var(--warn-bg); color: var(--warn); }
+  .p-maintenance { background: rgba(167,139,250,.14); color: #c4b5fd; }
+  .p-offline     { background: rgba(148,163,184,.14); color: #cbd5e1; }
+  .warn { color: var(--bad); }
+  .ok   { color: var(--ok); }
+  /* 抽屉里的报警行：`.st .alm` 只作用于工位卡，抽屉内需单独一条 */
+  #drawer-body .alm {
+    font-size: 12px; color: var(--bad); margin: 4px 0;
+    border-left: 3px solid var(--bad); padding-left: 8px;
+  }
+  pre { background:rgba(4,10,22,.8); border:1px solid var(--line); border-radius:9px; padding:10px; font-size:11.5px; overflow-x:auto; }
+  .legend { display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--txt-dim); }
+  .legend span { display:flex; align-items:center; gap:6px; }
+
+  /* ---- 页签 ---- */
+  .tabs { display:flex; align-items:center; gap:8px; margin:0 0 16px; flex-wrap:wrap; }
+  .tabs button {
+    background: rgba(16,32,57,.7); color: var(--txt-dim);
+    border:1px solid var(--line); border-radius:10px;
+    padding:8px 16px; font-size:14px; cursor:pointer; box-shadow:none;
+    font-weight:500;
+  }
+  .tabs button:hover { background: rgba(56,189,248,.1); color:var(--txt); }
+  .tabs button.active {
+    background: linear-gradient(180deg, #38bdf8, #2563eb); color:#04121f;
+    border-color: transparent; font-weight:700;
+    box-shadow: 0 4px 18px rgba(56,189,248,.35);
+  }
+  .upstreams { display:flex; gap:6px; flex-wrap:wrap; }
+  .up { font-size:12px; padding:3px 9px; border-radius:99px; border:1px solid var(--line); background:rgba(16,32,57,.6); color:var(--txt-dim); }
+  .up-ok { color:var(--ok); border-color:rgba(52,211,153,.45); background:var(--ok-bg); }
+  .up-bad { color:var(--bad); border-color:rgba(248,113,113,.45); background:var(--bad-bg); }
+
+  /* ---- 通用卡片/表格 ---- */
+  .blocked { border:1px dashed rgba(248,113,113,.5); background:var(--bad-bg); border-radius:var(--radius); padding:14px 16px; }
+  .blocked h3 { margin:0 0 8px; color:var(--bad); font-size:15px; }
+  .blocked p { margin:6px 0; font-size:13px; line-height:1.7; color:var(--txt); }
+  table.rows { width:100%; border-collapse:collapse; font-size:13px; margin:8px 0 18px; }
+  table.rows th { text-align:left; color:var(--txt-dim); font-weight:500; padding:8px; border-bottom:1px solid var(--line); }
+  table.rows td { padding:8px; border-bottom:1px solid var(--line-soft); vertical-align:top; }
+  table.rows tr:hover td { background:rgba(56,189,248,.05); }
+  .acts { white-space:nowrap; }
+  .acts button { font-size:12px; padding:4px 10px; margin-right:4px; border-radius:7px; cursor:pointer; }
+  .acts button:hover { background:#475569; }
+  .acts button.ghost { background:transparent; border:1px solid #475569; color:#cbd5e1; }
+  /* S03 四动作表单：参数全部由人填/选，页面不编造任何值 */
+  .form { display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; margin:10px 0 6px; }
+  .form label { font-size:12px; color:#94a3b8; display:flex; align-items:center; gap:6px; }
+  .form input, .form select { background:#0b1220; border:1px solid #334155; border-radius:6px; color:#e2e8f0; font-size:12px; padding:4px 7px; font-family:ui-monospace,Consolas,monospace; }
+  .form input[readonly] { color:#94a3b8; }
+  .lv { font-size:12px; padding:2px 7px; border-radius:99px; }
+  .lv-fault { background:#7f1d1d; color:#fecaca; }
+  .lv-warn { background:#78350f; color:#fed7aa; }
+  .lv-info { background:#1e3a8a; color:#bfdbfe; }
+  .tag { font-size:11px; padding:1px 6px; border-radius:99px; background:#334155; color:#cbd5e1; }
+  /* S07 工位卡片：每室一行自适应卡片流，一屏看清哪个工位有问题 */
+  .st-cards { display:grid; grid-template-columns:repeat(auto-fill, minmax(430px, 1fr)); gap:14px; margin:10px 0 22px; }
+  .st-card { background:#1e293b; border:1px solid #334155; border-left:4px solid #475569; border-radius:10px; padding:10px 12px 4px; }
+  .st-card.has-alarm { border-left-color:#dc2626; }
+  .st-card.all-clear { border-left-color:#2563eb; }
+  .st-card.none { border-left-color:#475569; opacity:.72; }
+  .st-card-hd { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding-bottom:6px; border-bottom:1px solid #334155; }
+  .st-name { font-size:15px; font-weight:600; color:#e2e8f0; }
+  .st-code { font-size:11px; color:#94a3b8; }
+  .st-badges { margin-left:auto; display:flex; gap:6px; }
+  .st-badge { font-size:11px; padding:2px 8px; border-radius:99px; white-space:nowrap; }
+  .b-alarm { background:#7f1d1d; color:#fecaca; }
+  .b-none { background:#334155; color:#cbd5e1; }
+  .b-muted { background:#1e3a8a; color:#bfdbfe; }
+  .st-empty { font-size:13px; color:#cbd5e1; margin:10px 0 12px; line-height:1.6; }
+  /* 卡片内的表：去掉左右外边距，避免把卡片撑破 */
+  table.rows.st-table { margin:6px 0 8px; table-layout:fixed; }
+  table.rows.st-table th, table.rows.st-table td { padding:5px 6px; font-size:12px; word-break:break-word; }
+  /* ---- S05 设备卡片（与工位卡片同族，蓝底区分） ---- */
+  .dv-card { background:#1e293b; border:1px solid #334155; border-left:4px solid #2563eb; border-radius:10px; padding:10px 12px 6px; }
+  .dv-card.dv-fault { border-left-color:#dc2626; }
+  .dv-card.dv-offline { border-left-color:#475569; opacity:.72; }
+  .dv-card.dv-ok { border-left-color:var(--ok); }
+  /* ---- 页面引言：每节开头说明"这一页是给谁看的" ---- */
+  .page-intro {
+    background: linear-gradient(180deg, rgba(22,41,74,.75), rgba(10,21,40,.75));
+    border-radius: var(--radius); padding:13px 18px; margin:0 0 20px;
+    border:1px solid var(--line); border-left:4px solid var(--brand);
+    box-shadow:0 4px 18px rgba(2,8,23,.35);
+  }
+  .page-intro h2 { margin:0 0 6px; font-size:16px; color:#e0f2fe; }
+  .page-intro p { margin:4px 0; font-size:13px; line-height:1.7; color:var(--txt); }
+  /* ---- 结论条：一眼看出"能不能用" ---- */
+  .verdict { margin:8px 0 14px; padding:9px 13px; border-radius:9px; font-size:14px; font-weight:600; }
+  .verdict.v-ok { background:var(--ok-bg); color:var(--ok); border-left:3px solid var(--ok); }
+  .verdict.v-warn { background:var(--warn-bg); color:var(--warn); border-left:3px solid var(--warn); }
+  .verdict.v-bad { background:var(--bad-bg); color:var(--bad); border-left:3px solid var(--bad); }
+  /* ---- 提示条 ---- */
+  .note { margin:8px 0; padding:9px 13px; border-radius:9px; font-size:13px; line-height:1.7; }
+  .note-info { background:rgba(56,189,248,.1); color:#bae6fd; border-left:3px solid var(--brand); }
+  .note-wait { background:var(--warn-bg); color:#fde68a; border-left:3px solid var(--warn); }
+  .note-bad  { background:var(--bad-bg); color:#fecaca; border-left:3px solid var(--bad); }
+  .note-ok   { background:var(--ok-bg); color:#a7f3d0; border-left:3px solid var(--ok); }
+  /* ---- 面板容器（玻璃拟态） ---- */
+  .panel {
+    background: linear-gradient(180deg, rgba(22,41,74,.62), rgba(10,21,40,.62));
+    border:1px solid var(--line); border-radius:var(--radius);
+    padding:16px 18px; margin:0 0 20px;
+    box-shadow:0 6px 24px rgba(2,8,23,.4), inset 0 1px 0 rgba(148,197,255,.06);
+  }
+  .panel h3 { margin-top:0; color:#e0f2fe; }
+  /* ---- 工位/设备卡片通用头部 ---- */
+  .st-card, .dv-card {
+    backdrop-filter: blur(6px);
+    box-shadow:0 5px 20px rgba(2,8,23,.4), inset 0 1px 0 rgba(148,197,255,.06);
+  }
+  .st-name { background:linear-gradient(92deg,#e0f2fe,#7dd3fc); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  /* ---- 席位状态小标签 ---- */
+  .seat-state { font-size:12px; padding:2px 10px; border-radius:99px; white-space:nowrap; font-weight:600; }
+  .s-free { background:var(--ok-bg); color:var(--ok); }
+  .s-busy { background:var(--bad-bg); color:var(--bad); }
+  .s-wait { background:var(--warn-bg); color:var(--warn); }
+  /* ---- 大号动作按钮（S03 操作区） ---- */
+  .big-acts { display:flex; flex-wrap:wrap; gap:10px; margin:16px 0; white-space:normal; }
+  .big-acts button { font-size:14px; padding:10px 20px; border-radius:9px; }
+  .out { font-family:ui-monospace,Consolas,monospace; font-size:12px; color:var(--txt-dim); margin:8px 0 20px; white-space:pre-wrap; word-break:break-all; }
+  .raw { background:rgba(4,10,22,.8); border:1px solid var(--line); border-radius:9px; padding:10px 12px; font-size:12px; overflow:auto; max-height:340px; color:var(--txt); }
+  .oktext { color:var(--ok); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>实训平台看板 · S01/S03/S05/S07</h1>
+  <span class="sub" id="src">连接中…</span>
+</header>
+
+<!-- 四节页签：一个看板覆盖《工作盘点》四节。S01 内容原样保留在第一个页签里 -->
+<nav class="tabs">
+  <button data-tab="station" class="active">S01 工位</button>
+  <button data-tab="alarm">S07 报警</button>
+  <button data-tab="resource">S03 资源</button>
+  <button data-tab="control">S05 指令</button>
+  <span id="upstreams" class="upstreams"></span>
+  <span id="tab-status" class="sub" style="margin-left:auto"></span>
+</nav>
+
+<div data-pane="station">
+
+<div class="legend" style="margin-bottom:14px;">
+  <span><i class="dot d-available"></i>空闲 available</span>
+  <span><i class="dot d-occupied"></i>占用 occupied</span>
+  <span><i class="dot d-maintenance"></i>维护 maintenance</span>
+  <span><i class="dot d-offline"></i>离线 offline</span>
+</div>
+
+<div class="bar">
+  <label>校区
+    <select id="f-campus"><option value="">全部</option></select>
+  </label>
+  <label>实训室
+    <select id="f-lab"><option value="">全部</option></select>
+  </label>
+  <label>状态
+    <select id="f-state">
+      <option value="">全部</option>
+      <option value="available">空闲</option>
+      <option value="occupied">占用</option>
+      <option value="maintenance">维护</option>
+      <option value="offline">离线</option>
+    </select>
+  </label>
+  <label>关键字 <input id="f-kw" placeholder="工位编码 / 名称" size="16"></label>
+  <button id="btn-refresh">刷新</button>
+  <button class="ghost" id="btn-auto">自动刷新：开</button>
+  <span class="sub" id="stream-meta" style="margin-left:auto">SSE 事件流：等待连接…</span>
+</div>
+
+<div class="stats" id="stats"></div>
+<div id="tree"></div>
+
+<div id="mask"></div>
+<aside id="drawer">
+  <button class="close" id="btn-close">×</button>
+  <div id="drawer-body"></div>
+</aside>
+
+</div><!-- /data-pane="station" 结束 -->
+
+<!-- 另外三节：内容全部由 board-sections.js 按既有 JSON 接口渲染 -->
+<div data-pane="alarm" style="display:none"><div id="pane-alarm"></div></div>
+<div data-pane="resource" style="display:none"><div id="pane-resource"></div></div>
+<div data-pane="control" style="display:none"><div id="pane-control"></div></div>
+
+<script src="/board-sections.js"></script>
+
+<script>
+'use strict';
+// 严格同源：页面由 board-web 自己托管，API 就是本站点 /board/v1/*
+const API = '/board/v1';
+let autoTimer = null;
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+const STATE_CN = { available: '空闲', occupied: '占用', maintenance: '维护', offline: '离线' };
+
+async function api(path) {
+  const r = await fetch(API + path, { cache: 'no-store' });
+  const body = await r.json();
+  if (!r.ok || body.ok === false) {
+    throw new Error(body.message || (body.error && body.error.message) || ('HTTP ' + r.status));
+  }
+  return body;
+}
+
+/**
+ * S01 设备级明细（单元 / 设备 / 报警 / 采集覆盖）。
+ *
+ * ⚠️ **为什么另取一个端点**：`/board/v1/tree` 是工位**编码级**投影
+ * （只有 stationCode/state/params），它**没有** `units`/`devices` ——
+ * S01 子项「S01.4 设备参数/报警/时间」与单元渲染需要这些字段。
+ * 它们由**既有**端点 `/site/data.json` 提供（同一进程的 `siteData()`）。
+ * 本页只**读**它，不做字段改写、不做聚合、不缓存 —— 与另外三节同一个纪律。
+ *
+ * 取数失败**必须显式说出来**：`/site/data.json` 拿不到时不能让工位卡
+ * 静默显示成"没有设备"（那是把"取不到"冒充成"没有"）。
+ */
+let siteDetail = { ok: false, byStation: new Map(), reason: '尚未加载' };
+
+async function loadSiteDetail() {
+  try {
+    const r = await fetch('/site/data.json', { cache: 'no-store', headers: { accept: 'application/json' } });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const body = await r.json();
+    const byStation = new Map();
+    for (const st of body.stations || []) byStation.set(st.stationCode, st);
+    siteDetail = { ok: true, byStation, reason: '' };
+    return body;
+  } catch (e) {
+    siteDetail = { ok: false, byStation: new Map(), reason: e.message };
+    return null;
+  }
+}
+
+/** 单元 / 设备的紧凑片段：进工位卡，让 S01 一眼看出"这台工位有什么"。 */
+function detailFragment(stationCode) {
+  if (!siteDetail.ok) {
+    return `<div class="meta warn">设备级明细未取到（${esc(siteDetail.reason)}）</div>`;
+  }
+  const st = siteDetail.byStation.get(stationCode);
+  if (!st) {
+    // pendingLab 里的工位**没有采集器**：既不是"空闲"也不是"采了没设备"
+    return '<div class="meta">未接入采集器（尚未现场接线实测）</div>';
+  }
+  const units = st.units || [];
+  const devices = st.devices || [];
+  const alarms = st.alarms || [];
+  const parts = [];
+  parts.push(`<div class="meta">${units.length} 类器件 · ${devices.length} 台设备` +
+    (alarms.length ? ` · <span class="warn">${alarms.length} 条报警</span>` : ''));
+  if (devices.length) {
+    const list = devices.slice(0, 3).map((d) =>
+      '· ' + esc(d.ip || '—') + ' <span class="sc">' + esc(String(d.mac || '').slice(0, 17)) + '</span>').join('<br>');
+    parts.push(`<div class="meta">${list}</div>`);
+  }
+  if (units.length) {
+    // 只列"已确认归属"的单元；本室多数是「归属未确认」，如实标注
+    const named = units.slice(0, 6).map((u) => esc(u.name)).join(' / ');
+    parts.push(`<div class="meta sc">${named}</div>`);
+  }
+  return parts.join('') + '</div>';
+}
+
+function query() {
+  const p = new URLSearchParams();
+  const c = $('f-campus').value, l = $('f-lab').value,
+        s = $('f-state').value, k = $('f-kw').value.trim();
+  if (c) p.set('campusCode', c);
+  if (l) p.set('labCode', l);
+  if (s) p.set('state', s);
+  if (k) p.set('keyword', k);
+  const qs = p.toString();
+  return qs ? ('?' + qs) : '';
+}
+
+function renderStats(stats) {
+  // 注意：/tree 的 stats 是**扁平** StateCount（total/available/occupied/maintenance/offline），
+  // 而 /stats 的 stats 是 StatsBreakdown（{total, byState, byLab, byCampus}）。
+  // 这里两种形状都兼容，避免以后换端点时又踩一次。
+  const by = stats.byState || stats;
+  const total = stats.total ?? by.total ?? 0;
+  const cards = [
+    ['合计', total, '#e2e8f0'],
+    ['空闲', by.available || 0, '#22c55e'],
+    ['占用', by.occupied || 0, '#f59e0b'],
+    ['维护', by.maintenance || 0, '#8b5cf6'],
+    ['离线', by.offline || 0, '#94a3b8'],
+  ];
+  $('stats').innerHTML = cards.map(([l, n, c]) =>
+    `<div class="stat"><div class="n" style="color:${c}">${n}</div><div class="l">${l}</div></div>`
+  ).join('');
+}
+
+function renderTree(campuses) {
+  if (!campuses || campuses.length === 0) {
+    $('tree').innerHTML = '<p style="color:#94a3b8">没有匹配的工位。</p>';
+    return;
+  }
+  $('tree').innerHTML = campuses.map((c) => {
+    const labs = c.labs.map((lab) => {
+      const cards = lab.stations.length === 0
+        ? '<div style="color:#64748b;font-size:12px;padding:6px 0">（该实训室无匹配工位）</div>'
+        : '<div class="grid">' + lab.stations.map((st) => {
+            const alarm = st.alarmCode
+              ? `<div class="alm">⚠ ${esc(st.alarmCode)}${st.alarmLevel ? ' · ' + esc(st.alarmLevel) : ''}</div>` : '';
+            const nm = st.name ? esc(st.name) : esc(st.stationCode);
+            const upd = st.updatedAt ? esc(st.updatedAt.replace('T', ' ').slice(0, 19)) : '无数据';
+            return `<div class="st s-${st.state}" data-sc="${esc(st.stationCode)}" title="点击查看详情">
+              <div class="top"><i class="dot d-${st.state}"></i><span class="name">${nm}</span></div>
+              <div class="sc">${esc(st.stationCode)}</div>
+              <div class="meta">${STATE_CN[st.state] || st.state} · ${esc(st.sourceLabel || '')}</div>
+              <div class="meta">更新：${upd}</div>
+              ${detailFragment(st.stationCode)}
+              ${alarm}
+            </div>`;
+          }).join('') + '</div>';
+      return `<div class="lab">
+        <h3>${esc(lab.name)} <span class="code">${esc(lab.labCode)}</span>
+          <span class="code">空闲 ${lab.stats.available || 0} / 占用 ${lab.stats.occupied || 0}</span></h3>
+        ${cards}
+      </div>`;
+    }).join('');
+    return `<section class="campus">
+      <h2>${esc(c.name)} <span class="code" style="font-weight:400">${esc(c.campusCode)}</span>
+        <span class="code" style="font-weight:400">共 ${c.stats.total || 0} 工位</span></h2>
+      ${labs}
+    </section>`;
+  }).join('');
+
+  $('tree').querySelectorAll('.st').forEach((el) => {
+    el.addEventListener('click', () => openDetail(el.dataset.sc));
+  });
+}
+
+async function load() {
+  try {
+    // 设备级明细与工位清单**并行**取：前者失败不阻塞后者（如实降级在卡内标注）
+    const [, d] = await Promise.all([loadSiteDetail(), api('/tree' + query())]);
+    renderStats(d.stats);
+    renderTree(d.campuses);
+    $('src').textContent = '服务正常 · 服务器时间 ' + d.serverTime +
+      (autoTimer ? ' · 每 3 秒自动刷新' : '') +
+      (siteDetail.ok ? '' : ' · ⚠ 设备级明细未取到：' + siteDetail.reason);
+    $('src').className = 'sub ' + (siteDetail.ok ? 'ok' : 'warn');
+  } catch (e) {
+    $('src').textContent = '获取失败：' + e.message;
+    $('src').className = 'sub warn';
+  }
+}
+
+async function openDetail(stationCode) {
+  $('mask').classList.add('on');
+  $('drawer').classList.add('on');
+  $('drawer-body').innerHTML = '<p style="color:#94a3b8">加载中…</p>';
+  try {
+    const d = await api('/stations/' + encodeURIComponent(stationCode));
+    const s = d.station;
+    /*
+     * ★ 工位详情**精简口径**（2026-09-24 用户要求）：
+     *   只要 ①状态 ②更新时间 ③执行模块状态 ④设备（MAC + 一行可读描述）。
+     *   不显示：工位编码/名称/实训室/校区/数据来源/来源标识/离线判定/采集覆盖/实时参数，
+     *           以及执行模块上的「归属未确认」标注。
+     *
+     * 为什么删这些：
+     *   - 「归属未确认」是个**内部判定状态**，现场看一眼只会困惑"到底谁管这个单元"；
+     *     它既不表示缺失也不表示故障，属于排查期间的中间态，不该占主视觉。
+     *   - 采集覆盖 / 实时参数 / 来源标识 是**排障字段**，日常看状态用不上。
+     *   这些信息仍在后端与 `/site` 页可查，**只是不再挤在详情抽屉里**。
+     */
+    const rows = [
+      ['状态', `<span class="pill p-${s.state}">${STATE_CN[s.state] || s.state}</span>`],
+      ['更新时间', esc(detailFmtTime(s.updatedAt))],
+    ];
+    if (s.alarmCode) rows.push(['报警', `<span class="warn">${esc(s.alarmCode)}${s.alarmLevel ? ' · ' + esc(s.alarmLevel) : ''}</span>`]);
+
+    let extra = '';
+    const det = siteDetail.byStation.get(stationCode);
+    if (!siteDetail.ok) {
+      extra = `<p class="warn" style="margin-top:16px">设备级明细未取到：${esc(siteDetail.reason)}</p>`;
+    } else if (!det) {
+      extra = '<p class="sub" style="margin-top:16px">该工位未接入采集器（尚未现场接线实测）——' +
+        '既不是「空闲」，也不是「采了没设备」。</p>';
+    } else {
+      const units = det.units || [], devices = det.devices || [], alarms = det.alarms || [];
+      const unobserved = det.unobservedDevices || [];
+
+      /*
+       * ③ 设备组成：只显示器件名称 + 构成（**去掉「归属未确认」**）。
+       *
+       * 标题用「设备组成」而非「执行模块」：LAB-05 现在列的是教材口径的
+       * **7 类器件**（PLC/RFID/CM1241/HMI/相机/机器人/IO 模块），与现场实物一一对应；
+       * LAB-01 列的是**7 个功能单元**（总控/执行/仓储/加工/打磨/分拣/检测）。
+       * 两室口径不同，因此标题同时给「本室 N 个 / 类」两种量词。
+       */
+      extra += `<p class="sub" style="margin-top:16px">设备组成（本室 ${units.length} 类）</p>` +
+        `<table>${units.map((u) => `<tr><td>${esc(u.name)}</td><td class="sc">${esc(unitStateText(u))}</td></tr>`).join('')}</table>`;
+
+      // ④ 设备：MAC + 一行可读描述（台账 label / 已观测身份）
+      extra += `<p class="sub" style="margin-top:16px">设备（已观测 ${devices.length} 台` +
+        (unobserved.length ? ` · 另有 <b>${unobserved.length}</b> 台已登记但采集不到` : '') + `）</p>`;
+      if (devices.length) {
+        extra += `<table>${devices.map((d) =>
+          `<tr><td class="sc">${esc(String(d.mac || '').slice(0, 17))}</td>` +
+          `<td>${esc(d.label || d.identity || d.vendor || d.kind || d.ip || '—')}</td></tr>`).join('')}</table>`;
+      } else {
+        extra += '<p class="sub">本轮未观测到设备。</p>';
+      }
+
+      /*
+       * 台账登记但本轮采集不到的设备（2026-09-23 现场要求）：
+       * 本室 ABB 机器人 / 研华工控机 / 树莓派**没有 IP、不对 DCP 应答**，
+       * 二层 scan 采不到它们。不列出就会从页面"凭空消失"。
+       * ⚠️ 仍然每个工位列出来，只是**不再堆那段长口径说明**（已移到本节顶部统一说明）。
+       */
+      if (unobserved.length) {
+        extra += `<p class="sub" style="margin-top:16px">台账已登记但<b>本轮采集不到</b>（${unobserved.length} 台）` +
+          ` <span style="color:#fbbf24">无法采集</span></p>` +
+          `<table>${unobserved.map((d) => `<tr><td class="sc">${esc(String(d.mac || '').slice(0, 17))}</td>` +
+            `<td>${esc(d.label || '（台账未写 label）')}</td>` +
+            `<td style="color:#fbbf24">无法采集</td></tr>`).join('')}</table>`;
+      }
+
+      if (alarms.length) {
+        extra += `<p class="sub" style="margin-top:16px">报警（${alarms.length} 条）</p>` +
+          alarms.map((a) => `<div class="alm">⚠ ${esc(a.code || a.alarmCode || '')} ${esc(a.message || '')}</div>`).join('');
+      }
+    }
+
+    $('drawer-body').innerHTML =
+      `<h2>${esc(s.name || s.stationCode)}</h2>
+       <table>${rows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table>
+       ${extra}`;
+  } catch (e) {
+    $('drawer-body').innerHTML = '<p class="warn">加载失败：' + esc(e.message) + '</p>';
+  }
+}
+
+/**
+ * 工位「更新时间」的显示口径。
+ *
+ * `updatedAt` 为 `null` 表示**从未有状态源数据**（数据缺席），
+ * 与「设备离线」是两回事 —— 因此显示「无」而不是编一个时间。
+ */
+function detailFmtTime(v) {
+  if (!v) return '无';
+  return String(v).replace('T', ' ').slice(0, 19);
+}
+
+/**
+ * 执行模块的状态文案（**去掉「归属未确认」**）。
+ *
+ * 原来的 `units[].state` 会出现「归属未确认」—— 那是**归属排查的中间态**，
+ * 不是模块自身状态。现场看工位详情时它只会造成困惑（"谁管这个单元？"），
+ * 且**既不表示缺失也不表示故障**。按用户 2026-09-24 要求不再显示。
+ *
+ * 但**不能直接抹成空白**（本室 69 个单元几乎全是这个态，会整片显示"—"）。
+ * 改展示该单元的**构成**（`component`）—— 那才是现场真正看得懂的信息：
+ * 「加工单元 | SINUMERIK 828D + 三菱伺服」比「加工单元 | 归属未确认」有用得多。
+ *
+ * 有明确状态时（如「未上报」）**照原样显示** —— 那是有信息量的；
+ * 并在有设备归属时补上设备。
+ */
+function unitStateText(u) {
+  const raw = String((u && u.state) || '').trim();
+  const comp = String((u && u.component) || '').trim();
+
+  // 明确状态（非「归属未确认」）：原样保留，这是有信息量的
+  if (raw !== '' && raw !== '归属未确认') {
+    return raw + (comp ? ' · ' + comp : '');
+  }
+  // 归属未确认 / 无状态：显示构成，不在页面上暴露内部判定态
+  return comp || '—';
+}
+
+function closeDetail() {
+  $('mask').classList.remove('on');
+  $('drawer').classList.remove('on');
+}
+
+async function loadFilters() {
+  try {
+    const d = await api('/tree');
+    const cs = $('f-campus'), ls = $('f-lab');
+    const seenC = new Set(), seenL = new Set();
+    d.campuses.forEach((c) => {
+      if (!seenC.has(c.campusCode)) {
+        seenC.add(c.campusCode);
+        cs.insertAdjacentHTML('beforeend', `<option value="${esc(c.campusCode)}">${esc(c.name)}</option>`);
+      }
+      c.labs.forEach((l) => {
+        if (!seenL.has(l.labCode)) {
+          seenL.add(l.labCode);
+          ls.insertAdjacentHTML('beforeend',
+            `<option value="${esc(l.labCode)}">${esc(l.name)} (${esc(l.labCode)})</option>`);
+        }
+      });
+    });
+  } catch (e) { /* 首次连接失败时不阻塞页面 */ }
+}
+
+$('btn-refresh').addEventListener('click', load);
+$('btn-close').addEventListener('click', closeDetail);
+$('mask').addEventListener('click', closeDetail);
+['f-campus', 'f-lab', 'f-state'].forEach((id) => $(id).addEventListener('change', load));
+
+let kwTimer = null;
+$('f-kw').addEventListener('input', () => {
+  clearTimeout(kwTimer);
+  kwTimer = setTimeout(load, 300);
+});
+
+$('btn-auto').addEventListener('click', () => {
+  if (autoTimer) {
+    clearInterval(autoTimer); autoTimer = null;
+    $('btn-auto').textContent = '自动刷新：关';
+  } else {
+    autoTimer = setInterval(load, 3000);
+    $('btn-auto').textContent = '自动刷新：开';
+  }
+  load();
+});
+
+loadFilters().then(load);
+autoTimer = setInterval(load, 3000);
+
+/* ------------------------------------------------------------------ S01.5
+ * SSE 事件流：状态变更由服务端**推**过来（替代"3 秒轮询才发现"）。
+ * 页面只做三件事：如实显示连接状态 / 显示帧序号与上屏时延 / 收到 state 就刷新视图。
+ * 断线由浏览器 EventSource 自带重连 + Last-Event-ID 续传，页面不自己造重连逻辑。
+ * 服务端在演示装配下用的是 FakeClock，因此"上屏时延"只在时钟可比时才显示。
+ */
+let stream = null;
+let lastStreamLoad = 0;
+
+function renderStreamMeta(text, cls) {
+  const el = $('stream-meta');
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'sub ' + (cls || '');
+}
+
+function connectStream() {
+  if (typeof EventSource !== 'function') {
+    renderStreamMeta('浏览器不支持 EventSource，保持 3 秒轮询', 'warn');
+    return;
+  }
+  stream = new EventSource(API + '/events');
+
+  stream.addEventListener('hello', (ev) => {
+    const d = JSON.parse(ev.data);
+    renderStreamMeta('SSE 已连接 · 帧 #' + d.sequence + ' · 重连退避 ' + d.retryMs + 'ms' +
+      (d.resumed ? ' · 已续传 ' + d.replayed + ' 帧' : ''), 'ok');
+  });
+
+  stream.addEventListener('snapshot', (ev) => {
+    const d = JSON.parse(ev.data);
+    renderStreamMeta('SSE 已连接 · 全量快照 ' + d.count + ' 个工位（' + d.reason + '）', 'ok');
+  });
+
+  stream.addEventListener('notice', (ev) => {
+    const d = JSON.parse(ev.data);
+    renderStreamMeta('SSE 提示：' + d.reason + ' → 已整体重发全量（不静默丢事件）', 'warn');
+  });
+
+  stream.addEventListener('state', (ev) => {
+    const d = JSON.parse(ev.data);
+    const latency = Date.now() - Number(d.atMs);
+    const latencyText = (latency >= 0 && latency <= 60000) ? ' · 上屏时延 ' + latency + 'ms' : '';
+    renderStreamMeta('SSE 已连接 · 帧 #' + d.sequence + ' · ' + d.count + ' 条变更' +
+      (d.full ? ' · 全量' : '') + (d.merged ? ' · 合并 ' + d.merged : '') + latencyText, 'ok');
+    const now = Date.now();
+    if (now - lastStreamLoad > 300) {
+      lastStreamLoad = now;
+      load();
+    }
+  });
+
+  stream.onerror = () => {
+    // EventSource 自带重连；这里如实显示"断开"，不假报正常
+    renderStreamMeta('SSE 断开，浏览器自动重连中（带 Last-Event-ID 续传）', 'warn');
+  };
+}
+
+connectStream();
+</script>
+</body>
+</html>

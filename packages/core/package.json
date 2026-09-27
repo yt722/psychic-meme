@@ -1,0 +1,18 @@
+{
+  "name": "@peripheral/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "外围服务共享基座：错误分类、幂等、时钟、事件信封、编码校验、参数基线",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.test.json",
+    "test": "node --import tsx --test test/errors.test.ts test/clock.test.ts test/coding.test.ts test/idempotency.test.ts test/envelope.test.ts test/params.test.ts test/local-params.test.ts test/retry.test.ts test/masking.test.ts"
+  }
+}
